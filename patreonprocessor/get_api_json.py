@@ -1,6 +1,17 @@
 import webbrowser 
 import httpx
-import sys
+
+import argparse
+import json
+
+from datetime import datetime
+import locale
+
+def proc_opts():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--manual', action='store_true')
+    parser.add_argument('--filename')
+    return parser.parse_args()
 
 patreon_url = ( 
     "https://www.patreon.com/api/posts?"
@@ -77,15 +88,27 @@ patreon_url = (
       "&sort=-published_at&json-api-version=1.0"
       "&json-api-use-default-includes=false" )
 
-print(patreon_url)
-webbrowser.open_new_tab(patreon_url)
+if __name__=="__main__":
+    print(patreon_url)
+    args=proc_opts()
 
-sys.exit(0)
-r = httpx.get(patreon_url)
-print(r.status_code)
-if r.status_code == 200:
-    data = r.json()
-    print(data['data'][1]['attributes'])
-else:
-    print("denied")
+    if args.manual:
+        webbrowser.open_new_tab(patreon_url)
+    else:
+        # Automatically download the json
+        r = httpx.get(patreon_url)
+        print(r.status_code)
+        if r.status_code == 200:
+            data = r.json()
+            if args.filename:
+                filename = args.filename
+            else:
+                locale.setlocale(locale.LC_ALL, '')
+                date_time = datetime.today().strftime('%d.%B.%y')
+                filename = f'posts.{date_time}.json'
+            with open(filename, 'w') as j_file:
+                print(f"Saving to {filename}")
+                json.dump(data, j_file)
+        else:
+            print("Access denied")
 

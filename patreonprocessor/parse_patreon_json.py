@@ -11,6 +11,10 @@ import random
 
 import httpx
 
+import logging
+logger = logging.getLogger('patreonparser.' + __name__)
+
+import log_config
 
 def proc_opts():
     parser = argparse.ArgumentParser(
@@ -33,13 +37,13 @@ class PatreonParser():
         typ = post['post_type']
         title = post['title']
         if typ != 'image_file':
-            print(f"Got no image file {title}")
+            logger.info(f"Got no image file {title}")
             return {}
         try:
             post_id = entry['id']
             tags = self.parse_tags(entry['relationships'])
             filename = self.download_img(post['post_file']['url'])
-            print(f"Got Post: {title} - {filename}")
+            logger.info(f"Got Post: {title} - {filename}")
             post_dic = {
                 'id' : post_id,
                 'title' : title,
@@ -52,7 +56,7 @@ class PatreonParser():
                 'tags' : tags
             }
         except KeyError as err:
-            print(entry)
+            logger.error(entry)
         return post_dic
 
     def download_img(self, url):
@@ -129,6 +133,7 @@ class PatreonParser():
 
 if __name__=="__main__":
     args = proc_opts()
+    log_config.setup_logging()
     patreon = PatreonParser(args.download_dir)
     data = patreon.parse_patreon(args.infile)
     posts = patreon.parse_entries(data)
