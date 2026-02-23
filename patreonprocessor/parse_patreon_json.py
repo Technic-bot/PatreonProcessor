@@ -44,6 +44,11 @@ class PatreonParser():
             tags = self.parse_tags(entry['relationships'])
             filename = self.download_img(post['post_file']['url'])
             logger.info(f"Got Post: {title} - {filename}")
+            description = self.parse_description(post['content_json_string'])
+            if not description:
+                description = post['content_teaser_text']
+            if not description:
+                logger.error("Could not find any description!!!!")
             post_dic = {
                 'id' : post_id,
                 'title' : title,
@@ -52,18 +57,33 @@ class PatreonParser():
                 'type' : typ,
                 'src_url' : post['url'],
                 'date' : post['published_at'],
-                'description' : post['content'],
+                'description' : description, 
                 'tags' : tags
             }
         except KeyError as err:
             logger.error(entry)
         return post_dic
 
+    def parse_description(self, content: str):
+        content = json.loads(content)
+        text = self.extract_text(content)
+        return text
+
+    def extract_text(self, node):
+        # Apparently it uses a prosemirror/tiptap format
+        # Which is recursive
+        if node['type'] == 'text':
+            return " " + node['text']
+        txt = ""
+        for c in node['content']:
+            txt = txt + self.extract_text(c)
+        return txt
+
     def download_img(self, url):
         r = httpx.head(url)
         status = r.status_code
         if status != 200:
-            print(f"Access denied: {status}")
+            logger.error(f"Access denied: {status}")
             return
 
         content_disp = r.headers['content-disposition']
@@ -81,10 +101,10 @@ class PatreonParser():
                 # print(f"Downloading {url}")
                 r = httpx.get(url)
                 with open(self.download_dir + filename, mode='wb') as file:
-                    print(f"Saving {filename} to {self.download_dir}")
+                    logger.info(f"Saving {filename} to {self.download_dir}")
                     file.write(r.content)
             else:
-                print(f"{filename} exists skipping")
+                logger.warning(f"{filename} exists skipping")
 
         return filename
 
@@ -110,14 +130,16 @@ class PatreonParser():
             post = self.parse_entry(entry)
             if post:
                 post_list.append(post)
-        print(f"Got {len(post_list)} posts")
+        logger.info(f"Got {len(post_list)} posts")
         return post_list
 
     def persist_posts(self, posts, outfile):
         fields = list(posts[0].keys())
-        with open(outfile, 'a') as csv_file:
+        file_exist = os.path.isfile(outfile)
+        with open(outfile, 'w') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fields)
-            writer.writeheader()
+            if not file_exist:
+                writer.writeheader()
             writer.writerows(posts)
         return
 
@@ -125,7 +147,7 @@ class PatreonParser():
         r = httpx.get(self.next_page)
         status = r.status_code
         if status != 200:
-            print(f"Access denied from {next_entry_url}: {status}")
+            logger.error(f"Access denied from {next_entry_url}: {status}")
             return
         next_json = r.json()
         return next_json
@@ -138,5 +160,5 @@ if __name__=="__main__":
     data = patreon.parse_patreon(args.infile)
     posts = patreon.parse_entries(data)
     patreon.persist_posts(posts, args.outfile)
-    webbrowser.open_new_tab(patreon.next_page)
+    # webbrowser.open_new_tab(patreon.next_page)
 

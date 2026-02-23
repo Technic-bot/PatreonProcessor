@@ -41,6 +41,8 @@ patreon_url = (
           "url"
       "&fields[post]=change_visibility_at,"
           "content,"
+          "content_teaser_text,"
+          "content_json_string,"
           # "comment_count,"
           # "commenter_count,"
           # "current_user_can_comment,"
