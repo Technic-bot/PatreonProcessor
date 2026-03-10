@@ -23,13 +23,12 @@ then
     exit
 fi
 
-#/samsung980pro1/manual_vault/
 echo "Downloading into $manual_vault"
+echo "python patreonprocessor/parse_patreon_json.py $input $outfile --download $manual_vault"
 python patreonprocessor/parse_patreon_json.py "$input" "$outfile" --download "$manual_vault"
 
 echo "$remote_address"
 rsync -av "$manual_vault" "$remote_address"
 scp $outfile "$ingest_address"
-#armorclad@manatarms:/u01/vault/
 
 

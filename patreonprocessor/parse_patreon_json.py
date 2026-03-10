@@ -67,7 +67,8 @@ class PatreonParser():
     def parse_description(self, content: str):
         content = json.loads(content)
         text = self.extract_text(content)
-        return text
+        # Last strip removes annoying final \n from parsed lines
+        return text.strip()
 
     def extract_text(self, node):
         # Apparently it uses a prosemirror/tiptap format
@@ -77,6 +78,8 @@ class PatreonParser():
         txt = ""
         for c in node['content']:
             txt = txt + self.extract_text(c)
+            if c['type'] == 'paragraph':
+                txt = txt + '\n'
         return txt
 
     def download_img(self, url):
@@ -138,8 +141,7 @@ class PatreonParser():
         file_exist = os.path.isfile(outfile)
         with open(outfile, 'w') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fields)
-            if not file_exist:
-                writer.writeheader()
+            writer.writeheader()
             writer.writerows(posts)
         return
 
