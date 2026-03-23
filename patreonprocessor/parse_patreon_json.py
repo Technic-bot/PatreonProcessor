@@ -62,10 +62,13 @@ class PatreonParser():
             }
         except KeyError as err:
             logger.error(entry)
+            raise
         return post_dic
 
     def parse_description(self, content: str):
         content = json.loads(content)
+        # import pprint
+        # pprint.pprint(content)
         text = self.extract_text(content)
         # Last strip removes annoying final \n from parsed lines
         return text.strip()
@@ -76,7 +79,7 @@ class PatreonParser():
         if node['type'] == 'text':
             return " " + node['text']
         txt = ""
-        for c in node['content']:
+        for c in node.get('content',[]):
             txt = txt + self.extract_text(c)
             if c['type'] == 'paragraph':
                 txt = txt + '\n'
