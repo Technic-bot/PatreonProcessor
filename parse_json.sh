@@ -28,7 +28,12 @@ echo "python patreonprocessor/parse_patreon_json.py $input $outfile --download $
 python patreonprocessor/parse_patreon_json.py "$input" "$outfile" --download "$manual_vault"
 
 echo "$remote_address"
-rsync -av "$manual_vault" "$remote_address"
+rsync -av \
+    --include='*.jpg' \
+    --include='*.jpeg' \
+    --include='*.png' \
+    --exclude='*.zip' \
+    "$manual_vault" "$remote_address"
 scp $outfile "$ingest_address"
 
 
